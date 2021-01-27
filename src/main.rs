@@ -12,8 +12,12 @@ use nom::character::is_alphanumeric;
 use nom::character::complete::alpha1;
 use nom::character::complete::line_ending as eol;
 
+pub fn is_valid_value_char(chr: char) -> bool {
+    is_alphanumeric(chr as u8) || chr == '/' || chr == '-'
+}
+
 named!(end_of_line<&str, &str>, alt!(tag!(" ") | eol));
-named!(alphanumericslash1<&str, &str>, take_while!(|c| is_alphanumeric(c as u8) || c == '/' || c == '-'));
+named!(alphanumericslash1<&str, &str>, take_while!(is_valid_value_char));
 named!(kv_pair<&str, (&str, &str)>, separated_pair!(alpha1, nom::bytes::complete::tag("="), alphanumericslash1) );
 
 fn main() {
