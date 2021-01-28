@@ -12,7 +12,7 @@ use nom::character::is_alphanumeric;
 use nom::character::complete::alpha1;
 use nom::character::complete::line_ending as eol;
 
-pub fn is_valid_value_char(chr: char) -> bool {
+fn is_valid_value_char(chr: char) -> bool {
     is_alphanumeric(chr as u8) || chr == '/' || chr == '-'
 }
 
@@ -20,24 +20,29 @@ named!(end_of_line<&str, &str>, alt!(tag!(" ") | eol));
 named!(alphanumericslash1<&str, &str>, take_while!(is_valid_value_char));
 named!(kv_pair<&str, (&str, &str)>, separated_pair!(alpha1, nom::bytes::complete::tag("="), alphanumericslash1) );
 
-fn main() {
-    let full = "rule=9 dec=allow perm=execute auid=1003 pid=5555 exe=/usr/bin/bash : path=/usr/bin/vi ftype=application/x-executable\n";
-    let clean = full.split(':').last().unwrap().trim_start();
+static FULL: &str = "rule=9 dec=allow perm=execute auid=1003 pid=5555 exe=/usr/bin/bash : path=/usr/bin/vi ftype=application/x-executable\n";
+
+#[test]
+fn single_entry_to_map() {
+    let clean = FULL.split(':').last().unwrap().trim_start();
     let mut nom_it = iterator(clean, terminated( kv_pair, end_of_line));
 
-    // map
-    let map = nom_it.map(|(k, v)| (k, v)).collect::<HashMap<_, _>>();
-    println!("{:?}", map);
-    //////
-    // {"path": "/usr/bin/vi", "ftype": "application/x-executable"}
+    let res = nom_it.map(|(k, v)| (k, v)).collect::<HashMap<_, _>>();
 
-    // vec
-    // let res: Vec<(&str, &str)> = nom_it.collect();
-    // println!("{}", clean);
-    // for (x, y) in res.iter() {
-    //     println!("{} {}", x, y)
-    // }
-    //////
+    // {"path": "/usr/bin/vi", "ftype": "application/x-executable"}
+    println!("{:?}", res);
+}
+
+#[test]
+fn single_entry_to_vec() {
+    let clean = FULL.split(':').last().unwrap().trim_start();
+    let mut nom_it = iterator(clean, terminated( kv_pair, end_of_line));
+
+    let res: Vec<(&str, &str)> = nom_it.collect();
+
     // path /usr/bin/vi
     // ftype application/x-executable
+    for (x, y) in res.iter() {
+        println!("{} {}", x, y)
+    }
 }
